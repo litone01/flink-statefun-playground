@@ -18,6 +18,10 @@
 
 package org.apache.flink;
 
+import java.awt.*;
+import java.nio.file.Path;
+
+import org.junit.experimental.theories.FromDataPoints;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.Testcontainers;
@@ -26,6 +30,8 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.images.builder.ImageFromDockerfile;
+import org.testcontainers.shaded.com.github.dockerjava.core.dockerfile.Dockerfile;
 import org.testcontainers.utility.DockerImageName;
 
 /**
@@ -55,11 +61,10 @@ public final class StatefulFunctionsRuntimeProcesses {
       workerContainer(NETWORK).dependsOn(STATEFUN_MANAGER, KAFKA);
 
   private static final GenericContainer<?> KAFKA_JSON_PRODUCER_ONE =
-            ProducerOneContainer(NETWORK).dependsOn(StatefulFunctionsRuntimeProcesses.STATEFUN_WORKER, StatefulFunctionsRuntimeProcesses.KAFKA);
+            ProducerOneContainer(NETWORK).dependsOn(STATEFUN_WORKER, KAFKA);
 
   private static final GenericContainer<?> KAFKA_JSON_PRODUCER_TWO =
-            ProducerTwoContainer(NETWORK).dependsOn(StatefulFunctionsRuntimeProcesses.STATEFUN_WORKER, StatefulFunctionsRuntimeProcesses.KAFKA);
-
+            ProducerTwoContainer(NETWORK).dependsOn(STATEFUN_WORKER, KAFKA);
 
   public static void main(String[] args) throws Exception {
     try {
@@ -69,13 +74,13 @@ public final class StatefulFunctionsRuntimeProcesses {
       Testcontainers.exposeHostPorts(TestBedAppServer.PORT);
       STATEFUN_WORKER.start();
 
-      KAFKA_JSON_PRODUCER_ONE.start();
-      KAFKA_JSON_PRODUCER_TWO.start();
+//      KAFKA_JSON_PRODUCER_ONE.start();
+//      KAFKA_JSON_PRODUCER_TWO.start();
 
       sleep();
     } finally {
-      KAFKA_JSON_PRODUCER_ONE.stop();
-      KAFKA_JSON_PRODUCER_TWO.stop();
+//      KAFKA_JSON_PRODUCER_ONE.stop();
+//      KAFKA_JSON_PRODUCER_TWO.stop();
 
       STATEFUN_WORKER.stop();
       STATEFUN_MANAGER.stop();
@@ -89,16 +94,31 @@ public final class StatefulFunctionsRuntimeProcesses {
         .withNetworkAliases("kafka");
   }
 
+//  private static GenericContainer<?> managerContainer(Network network) {
+//    return new GenericContainer<>(DockerImageName.parse("apache/flink-statefun:3.2.0"))
+//        .withNetwork(network)
+//        .withNetworkAliases("statefun-manager")
+//        .withEnv("ROLE", "master")
+//        .withEnv("MASTER_HOST", "statefun-manager")
+//        .withExposedPorts(8081)
+//        .withLogConsumer(new Slf4jLogConsumer(LOG))
+//        .withClasspathResourceMapping(
+//            "module.yaml", "/opt/statefun/modules/greeter/module.yaml", BindMode.READ_ONLY);
+//  }
+
   private static GenericContainer<?> managerContainer(Network network) {
-    return new GenericContainer<>(DockerImageName.parse("apache/flink-statefun:3.2.0"))
-        .withNetwork(network)
-        .withNetworkAliases("statefun-manager")
-        .withEnv("ROLE", "master")
-        .withEnv("MASTER_HOST", "statefun-manager")
-        .withExposedPorts(8081)
-        .withLogConsumer(new Slf4jLogConsumer(LOG))
-        .withClasspathResourceMapping(
-            "module.yaml", "/opt/statefun/modules/greeter/module.yaml", BindMode.READ_ONLY);
+    ImageFromDockerfile img = new ImageFromDockerfile().
+            withFileFromPath(".", Path.of("/Users/jerry/projects/statefun/flink-statefun-docker/3.2.0-java11"));
+
+    return new GenericContainer<>(img)
+            .withNetwork(network)
+            .withNetworkAliases("statefun-manager")
+            .withEnv("ROLE", "master")
+            .withEnv("MASTER_HOST", "statefun-manager")
+            .withExposedPorts(8081)
+            .withLogConsumer(new Slf4jLogConsumer(LOG))
+            .withClasspathResourceMapping(
+                    "module.yaml", "/opt/statefun/modules/greeter/module.yaml", BindMode.READ_ONLY);
   }
 
   private static GenericContainer<?> workerContainer(Network network) {
