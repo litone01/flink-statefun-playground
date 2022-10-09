@@ -6,7 +6,7 @@ This repository contains tutorials and examples for [Stateful Functions](https:/
 
 The repository contains tutorials and examples for all SDKs that Stateful Functions supports:
 
-- [`Java SDK`](java)
+- [`Java SDK`](java-application)
 - [`Go SDK`](go)
 - [`JavaScript SDK`](javascript)
 - [`Python SDK`](python)
