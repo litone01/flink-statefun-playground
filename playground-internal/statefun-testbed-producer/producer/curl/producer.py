@@ -1,6 +1,5 @@
 import argparse
 import re
-from this import d
 import time
 import requests
 import sys
@@ -10,8 +9,8 @@ ISLOOP = True
 
 def sendPutRequests(url, headers, data):
     while ISLOOP:
-        response = requests.put(url=url, headers=headers, data=data)
-        time.sleep(DELAY)
+        response = requests.put(url=url, headers=headers, json=data)
+        # time.sleep(DELAY)
         break
 
 def sendGetRequest(url):
@@ -19,77 +18,79 @@ def sendGetRequest(url):
     return response
 
 # transform the original id which is unique inside its stream to a unique id among all streams
-def transformId(originalId, streamId):
-    return '{}-{}'.format(streamId, originalId)
+def transformId(originalId, stream_id):
+    return '{}-{}'.format(stream_id, originalId)
 
-def restock(streamId, itemId, quantity):
-    transformedItemId = transformId(itemId, streamId)
+def restock(stream_id, item_id, quantity):
+    transformed_item_id = transformId(item_id, stream_id)
     headers = {
         'Content-Type': 'application/vnd.com.example/RestockItem',
     }
-    data = '{"itemId": {}, "quantity": {}}'.format(transformedItemId, quantity)
-    url = 'http://localhost:8090/com.example/stock/{}'.format(transformedItemId)
+    data = {"itemId": transformed_item_id, "quantity": quantity}
+    url = 'http://localhost:8090/com.example/stock/{}'.format(transformed_item_id)
 
-    print(f"[Stream {streamId}] sending restock event to {url}")
+    print(f"[Stream {stream_id}] sending restock event to {url} \n with data {data}")
+
     sendPutRequests(url, headers, data)
 
-def addToCart(streamId, userId, quantity, itemId):
-    transformedItemId = transformId(itemId, streamId)
-    transformedUserId = transformId(userId, streamId)
+def addToCart(stream_id, user_id, quantity, item_id):
+    transformed_item_id = transformId(item_id, stream_id)
+    transformed_user_id = transformId(user_id, stream_id)
     headers = {
         'Content-Type': 'application/vnd.com.example/AddToCart',
     }
-    data = '{"userId": {}, "quantity": {}, "itemId": {}}'.format(transformedUserId, quantity, transformedItemId)
-    url = 'http://localhost:8090/com.example/user-shopping-cart/{}'.format(transformedUserId)
+    data = {"userId": transformed_user_id, "quantity": quantity, "itemId": transformed_item_id}
+    url = 'http://localhost:8090/com.example/user-shopping-cart/{}'.format(transformed_user_id)
     
-    print(f"[Stream {streamId}] sending addToCart event to {url}")
+    print(f"[Stream {stream_id}] sending addToCart event to {url}")
     sendPutRequests(url, headers, data)
 
-def checkout(streamId, userId):
-    transformedUserId = transformId(userId, streamId)
+def checkout(stream_id, user_id):
+    transformed_user_id = transformId(user_id, stream_id)
     headers = {
         'Content-Type': 'application/vnd.com.example/Checkout',
     }
-    data = '{"userId": {}}'.format(transformedUserId)
-    url = 'http://localhost:8090/com.example/user-shopping-cart/{}'.format(transformedUserId)
+    data = {"userId": transformed_user_id}
+    url = 'http://localhost:8090/com.example/user-shopping-cart/{}'.format(transformed_user_id)
 
-    print(f"[Stream {streamId}] sending checkout events to {url}")
+    print(f"[Stream {stream_id}] sending checkout events to {url}")
     sendPutRequests(url, headers, data)
 
     return
 
 # TODO: how to separate the receipt of different streams?
-def receipt(streamId):
-    url = 'http://localhost:8090/com.example/reciept'
+def receipt(stream_id):
+    url = 'http://localhost:8091/receipts-{}'.format(stream_id)
+    print(f"[Stream {stream_id}] getting receipts from {url}")
+
     response = sendGetRequest(url)
     print(f"recipets:\n {response.text}")
 
     return
 
 def main(args):
-    print(args)
     ISLOOP = args.loop
 
     if args.restock:
-        restock(args.streamId, args.itemId, args.quantity)
-    elif args.addToCart:
-        addToCart(args.streamId, args.userId, args.quantity, args.itemId)
+        restock(args.stream_id, args.item_id, args.quantity)
+    elif args.add_to_cart:
+        addToCart(args.stream_id, args.user_id, args.quantity, args.item_id)
     elif args.checkout:
-        checkout(args.streamId, args.userId)
+        checkout(args.stream_id, args.user_id)
     elif args.receipt:
-        receipt(args.streamId)
+        receipt(args.stream_id)
 
     return
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # event type config
-    parser.add_argument('--restock', default=False, type=bool, help='start the restock producer')
-    parser.add_argument('--add_to_cart', default=False, type=bool, help='start the addToCart producer')
-    parser.add_argument('--checkout', default=False, type=bool, help='start the checkout producer')
-    parser.add_argument('--receipt', default=False, type=bool, help='start the receipt producer')
+    parser.add_argument('--restock', action='store_true', help='start the restock producer')
+    parser.add_argument('--add_to_cart', action='store_true', help='start the addToCart producer')
+    parser.add_argument('--checkout', action='store_true', help='start the checkout producer')
+    parser.add_argument('--receipt', action='store_true', help='start the receipt producer')
     # common event config
-    parser.add_argument('--loop', default=False, type=bool, help='true if the producer needs to run forever')
+    parser.add_argument('--loop', action='store_true', help='true if the producer needs to run forever')
     # event details
     parser.add_argument('--item_id', default='socks', type=str, help='the item id')
     parser.add_argument('--quantity', default=1, type=int, help='the quantity of the item')

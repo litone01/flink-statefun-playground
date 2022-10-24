@@ -4,5 +4,5 @@ target/
 venv/*
 __pycahe__/*
 .DS_Store
-.java-versopm
+.java-version
 .devcontainer/

@@ -144,18 +144,30 @@ final class UserShoppingCartFn implements StatefulFunction {
             LOG.info("Receipt items: ");
             LOG.info("{}", items);
 
+            String streamId = getStreamId(checkout.getUserId());
+            String receiptTopic = getReceiptTopic(streamId);
             final Messages.Receipt receipt = new Messages.Receipt(context.self().id(), items);
             final EgressMessage egressMessage =
                 EgressMessageBuilder.forEgress(Identifiers.RECEIPT_EGRESS)
                     .withCustomType(
                         Messages.EGRESS_RECORD_JSON_TYPE,
-                        new Messages.EgressRecord(Identifiers.RECEIPT_TOPICS, receipt.toString()))
+                        new Messages.EgressRecord(receiptTopic, receipt.toString()))
                     .build();
             context.send(egressMessage);
           });
       LOG.info("---");
     }
     return context.done();
+  }
+
+  // We encode id by appending streamId in front, i.e. {stream_id}-{original_id}
+  private String getStreamId(String id) {
+    return id.split("-")[0];
+  }
+
+  // TODO: Currently, hardcoded to a fixed number of "receipt" topic
+  private String getReceiptTopic(String streamId) {
+    return Identifiers.RECEIPT_TOPICS + "-" + streamId;
   }
 
   private static class Basket {
