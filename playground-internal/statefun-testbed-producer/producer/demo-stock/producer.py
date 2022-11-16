@@ -4,9 +4,10 @@ import time
 import requests
 import sys
 
-DELAY = 2
+DELAY = 1
 ISLOOP = True
 COUNT = 1
+# COUNT = 10
 
 def sendPutRequests(url, headers, data):
     count = 0
@@ -15,8 +16,6 @@ def sendPutRequests(url, headers, data):
         count += 1
         print(f"sent {count} request")
         sys.stdout.flush()
-
-        time.sleep(DELAY)
 
 def sendGetRequest(url):
     count = 0
