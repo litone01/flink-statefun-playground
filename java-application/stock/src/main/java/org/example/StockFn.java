@@ -15,27 +15,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.flink.statefun.playground.java.shoppingcart;
+package org.example;
 
-import static org.apache.flink.statefun.playground.java.shoppingcart.Messages.*;
-import static org.apache.flink.statefun.playground.java.shoppingcart.Messages.ItemAvailability.*;
+import static org.example.Messages.*;
 
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import org.apache.flink.statefun.sdk.java.Address;
 import org.apache.flink.statefun.sdk.java.AddressScopedStorage;
 import org.apache.flink.statefun.sdk.java.Context;
 import org.apache.flink.statefun.sdk.java.StatefulFunction;
 import org.apache.flink.statefun.sdk.java.TypeName;
 import org.apache.flink.statefun.sdk.java.ValueSpec;
+import org.apache.flink.statefun.sdk.java.message.EgressMessage;
+import org.apache.flink.statefun.sdk.java.message.EgressMessageBuilder;
 import org.apache.flink.statefun.sdk.java.message.Message;
-import org.apache.flink.statefun.sdk.java.message.MessageBuilder;
+import org.example.utils.utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 final class StockFn implements StatefulFunction {
 
-  private static final Logger LOG = LoggerFactory.getLogger(UserShoppingCartFn.class);
+  private static final Logger LOG = LoggerFactory.getLogger(StockFn.class);
 
   static final TypeName TYPE = TypeName.typeNameFromString("com.example/stock");
   static final ValueSpec<Integer> STOCK = ValueSpec.named("stock").withIntType();
@@ -47,43 +46,38 @@ final class StockFn implements StatefulFunction {
     if (message.is(RESTOCK_ITEM_TYPE)) {
       RestockItem restock = message.as(RESTOCK_ITEM_TYPE);
 
-      LOG.info("{}", restock);
+      LOG.info("Received: {}", restock);
       LOG.info("Scope: {}", context.self());
-      LOG.info("Caller: {}", context.caller());
 
+      // Update the item quantity
       final int newQuantity = quantity + restock.getQuantity();
       storage.set(STOCK, newQuantity);
-      LOG.info("---");
-      return context.done();
-    } else if (message.is(REQUEST_ITEM_TYPE)) {
-      final RequestItem request = message.as(REQUEST_ITEM_TYPE);
-      LOG.info("{}", request);
-      LOG.info("Scope: {}", context.self());
-      LOG.info("Caller: {}", context.caller());
+      String itemId = restock.getItemId();
+      LOG.info("ItemId: {}, New Quantity: {}", itemId, newQuantity);
 
-      final int requestQuantity = request.getQuantity();
+      // Send the new status to the egress
+      String streamId = utils.getStreamId(itemId);
+      String egressTopic = utils.getItemStatusEgressTopic(streamId);
+      final ItemStatus itemStatus = createItemStatus(itemId, newQuantity);
+      final EgressMessage egressMessage =
+          EgressMessageBuilder.forEgress(Identifiers.ITEM_STATUS_EGRESS)
+              .withCustomType(
+                  Messages.EGRESS_RECORD_JSON_TYPE,
+                  new EgressRecord(egressTopic, itemStatus.toString()))
+              .build();
+      context.send(egressMessage);
 
-      final ItemAvailability itemAvailability;
-      LOG.info("Available quantity: {}", quantity);
-      LOG.info("Requested quantity: {}", requestQuantity);
-      if (quantity >= requestQuantity) {
-        storage.set(STOCK, quantity - requestQuantity);
-        itemAvailability = new ItemAvailability(Status.INSTOCK, requestQuantity);
-      } else {
-        itemAvailability = new ItemAvailability(Status.OUTOFSTOCK, requestQuantity);
-      }
-
-      final Optional<Address> caller = context.caller();
-      if (caller.isPresent()) {
-        context.send(
-            MessageBuilder.forAddress(caller.get())
-                .withCustomType(ITEM_AVAILABILITY_TYPE, itemAvailability)
-                .build());
-      } else {
-        throw new IllegalStateException("There should always be a caller in this example");
-      }
-      LOG.info("---");
+    } else {
+      LOG.error("Unknown message type: {}; message: {}", message.valueTypeName(), message);
     }
+
+    LOG.info("---");
     return context.done();
+  }
+
+  private ItemStatus createItemStatus(String itemId, int quantity) {
+    String details = String.format("quantity: %d", quantity);
+
+    return new ItemStatus(itemId, details);
   }
 }

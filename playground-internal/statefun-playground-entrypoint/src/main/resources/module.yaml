@@ -28,5 +28,7 @@ kind: io.statefun.playground.v1/egress
 spec:
   port: 8091
   topics:
-    - receipts-s1
-    - receipts-s2
+    - items-s1
+    - items-s2
+#    - receipts-s1
+#    - receipts-s2

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.flink.statefun.playground.java.shoppingcart;
+package org.example;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -29,108 +29,19 @@ public class Messages {
 
   private static final ObjectMapper mapper = new ObjectMapper();
 
-  /* ingress -> user-shopping-cart */
-  public static final Type<AddToCart> ADD_TO_CART =
-      SimpleType.simpleImmutableTypeFrom(
-          TypeName.typeNameFromString("com.example/AddToCart"),
-          mapper::writeValueAsBytes,
-          bytes -> mapper.readValue(bytes, AddToCart.class));
-
-  /* ingress -> user-shopping-cart */
-  public static final Type<ClearCart> CLEAR_CART_TYPE =
-      SimpleType.simpleImmutableTypeFrom(
-          TypeName.typeNameFromString("com.example/ClearCart"),
-          mapper::writeValueAsBytes,
-          bytes -> mapper.readValue(bytes, ClearCart.class));
-
-  /* ingress -> user-shopping-cart */
-  public static final Type<Checkout> CHECKOUT_TYPE =
-      SimpleType.simpleImmutableTypeFrom(
-          TypeName.typeNameFromString("com.example/Checkout"),
-          mapper::writeValueAsBytes,
-          bytes -> mapper.readValue(bytes, Checkout.class));
-
-  /* user-shopping-cart -> egress */
-  public static final Type<Receipt> RECEIPT_TYPE =
-      SimpleType.simpleImmutableTypeFrom(
-          TypeName.typeNameFromString("com.example/Receipt"),
-          mapper::writeValueAsBytes,
-          bytes -> mapper.readValue(bytes, Receipt.class));
-
   /* ingress -> stock */
-  /* user-shopping-cart -> stock */
   public static final Type<RestockItem> RESTOCK_ITEM_TYPE =
       SimpleType.simpleImmutableTypeFrom(
           TypeName.typeNameFromString("com.example/RestockItem"),
           mapper::writeValueAsBytes,
           bytes -> mapper.readValue(bytes, RestockItem.class));
 
-  public static class ClearCart {
-    private final String userId;
-
-    @JsonCreator
-    public ClearCart(@JsonProperty("userId") String userId) {
-      this.userId = userId;
-    }
-    /*        Messages.AddToCart add = new Messages.AddToCart("1", "2", 3);
-    String addJson = mapper.writeValueAsString(add);
-    System.out.println(addJson);
-
-    String json = "{\"userId\":1, \"quantity\":3, \"itemId\":2}";
-
-    Messages.AddToCart addReceived = mapper.readValue(json.getBytes(), Messages.AddToCart.class);
-    System.out.println(addReceived);*/
-    public String getUserId() {
-      return userId;
-    }
-
-    @Override
-    public String toString() {
-      return "ClearCart{" + "userId='" + userId + '\'' + '}';
-    }
-  }
-
-  public static class Checkout {
-    private final String userId;
-
-    @JsonCreator
-    public Checkout(@JsonProperty("userId") String userId) {
-      this.userId = userId;
-    }
-
-    public String getUserId() {
-      return userId;
-    }
-
-    @Override
-    public String toString() {
-      return "Checkout{" + "userId='" + userId + '\'' + '}';
-    }
-  }
-
-  public static class Receipt {
-
-    private final String userId;
-    private final String details;
-
-    public Receipt(@JsonProperty("userId") String userId, @JsonProperty("details") String details) {
-      this.userId = userId;
-      this.details = details;
-    }
-
-    public String getUserId() {
-      return userId;
-    }
-
-    public String getDetails() {
-      return details;
-    }
-
-    @Override
-    public String toString() {
-      return "Receipt{" + "userId='" + userId + '\'' + ", details='" + details + '\'' + '}';
-    }
-  }
+  /* stock -> egress */
+  public static final Type<ItemStatus> STOCK_STATUS_TYPE =
+      SimpleType.simpleImmutableTypeFrom(
+          TypeName.typeNameFromString("com.example/StockStatus"),
+          mapper::writeValueAsBytes,
+          bytes -> mapper.readValue(bytes, ItemStatus.class));
 
   public static class RestockItem {
     private final String itemId;
@@ -157,45 +68,28 @@ public class Messages {
     }
   }
 
-  public static class AddToCart {
-    private final String userId;
+  public static class ItemStatus {
+
     private final String itemId;
-    private final int quantity;
+    private final String details;
 
-    @JsonCreator
-    public AddToCart(
-        @JsonProperty("userId") String userId,
-        @JsonProperty("itemId") String itemId,
-        @JsonProperty("quantity") int quantity) {
-      this.userId = userId;
+    public ItemStatus(
+        @JsonProperty("itemId") String itemId, @JsonProperty("details") String details) {
       this.itemId = itemId;
-      this.quantity = quantity;
-    }
-
-    public String getUserId() {
-      return userId;
+      this.details = details;
     }
 
     public String getItemId() {
       return itemId;
     }
 
-    public int getQuantity() {
-      return quantity;
+    public String getDetails() {
+      return details;
     }
 
     @Override
     public String toString() {
-      return "AddToCart{"
-          + "userId='"
-          + userId
-          + '\''
-          + ", itemId='"
-          + itemId
-          + '\''
-          + ", quantity="
-          + quantity
-          + '}';
+      return "ItemStatus{" + "itemId='" + itemId + '\'' + ", details='" + details + '\'' + '}';
     }
   }
 
@@ -203,74 +97,11 @@ public class Messages {
   // Internal messages
   // ---------------------------------------------------------------------
 
-  /* user-shopping-cart -> stock */
-  public static final Type<RequestItem> REQUEST_ITEM_TYPE =
-      SimpleType.simpleImmutableTypeFrom(
-          TypeName.typeNameFromString("com.example/RequestItem"),
-          mapper::writeValueAsBytes,
-          bytes -> mapper.readValue(bytes, RequestItem.class));
-
-  /* stock -> user-shopping-cart */
-  public static final Type<ItemAvailability> ITEM_AVAILABILITY_TYPE =
-      SimpleType.simpleImmutableTypeFrom(
-          TypeName.typeNameFromString("com.example/ItemAvailability"),
-          mapper::writeValueAsBytes,
-          bytes -> mapper.readValue(bytes, ItemAvailability.class));
-
   public static final Type<EgressRecord> EGRESS_RECORD_JSON_TYPE =
       SimpleType.simpleImmutableTypeFrom(
           TypeName.typeNameOf("io.statefun.playground", "EgressRecord"),
           mapper::writeValueAsBytes,
           bytes -> mapper.readValue(bytes, EgressRecord.class));
-
-  public static class RequestItem {
-    private final int quantity;
-
-    @JsonCreator
-    public RequestItem(@JsonProperty("quantity") int quantity) {
-      this.quantity = quantity;
-    }
-
-    public int getQuantity() {
-      return quantity;
-    }
-
-    @Override
-    public String toString() {
-      return "RequestItem{" + "quantity=" + quantity + '}';
-    }
-  }
-
-  public static class ItemAvailability {
-
-    public enum Status {
-      INSTOCK,
-      OUTOFSTOCK
-    }
-
-    private final Status status;
-    private final int quantity;
-
-    @JsonCreator
-    public ItemAvailability(
-        @JsonProperty("status") Status status, @JsonProperty("quantity") int quantity) {
-      this.status = status;
-      this.quantity = quantity;
-    }
-
-    public Status getStatus() {
-      return status;
-    }
-
-    public int getQuantity() {
-      return quantity;
-    }
-
-    @Override
-    public String toString() {
-      return "ItemAvailability{" + "status=" + status + ", quantity=" + quantity + '}';
-    }
-  }
 
   public static class EgressRecord {
     @JsonProperty("topic")

@@ -1,44 +1,39 @@
-package org.apache.flink.statefun.playground.java.shoppingcart;
-
-import org.apache.flink.statefun.sdk.java.TypeName;
-import org.apache.flink.statefun.sdk.java.types.SimpleType;
-import org.apache.flink.statefun.sdk.java.types.Type;
+package org.example;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.flink.statefun.sdk.java.TypeName;
+import org.apache.flink.statefun.sdk.java.types.SimpleType;
+import org.apache.flink.statefun.sdk.java.types.Type;
 
 public class Types {
-    private static final ObjectMapper mapper = new ObjectMapper();
+  private static final ObjectMapper mapper = new ObjectMapper();
 
-    /* ingress -> word-count */
-    public static final Type<AddNewText> ADD_NEW_TEXT =
-        SimpleType.simpleImmutableTypeFrom(
-            TypeName.typeNameFromString("com.example/AddNewText"),
-            mapper::writeValueAsBytes,
-            bytes -> mapper.readValue(bytes, AddNewText.class));
+  /* ingress -> word-count */
+  public static final Type<AddNewText> ADD_NEW_TEXT =
+      SimpleType.simpleImmutableTypeFrom(
+          TypeName.typeNameFromString("com.example/AddNewText"),
+          mapper::writeValueAsBytes,
+          bytes -> mapper.readValue(bytes, AddNewText.class));
 
-    /* word-count -> egress */
+  /* word-count -> egress */
 
+  public static class AddNewText {
+    private final String text;
 
-    public static class AddNewText {
-        private final String text;
-
-        @JsonCreator
-        public AddNewText(
-                @JsonProperty("text") String text) {
-            this.text = text;
-        }
-
-        public String getText() {
-            return text;
-        }
-
-        @Override
-        public String toString() {
-            return "AddNewText{" +
-                    "text='" + text + '\'' +
-                    '}';
-        }
+    @JsonCreator
+    public AddNewText(@JsonProperty("text") String text) {
+      this.text = text;
     }
+
+    public String getText() {
+      return text;
+    }
+
+    @Override
+    public String toString() {
+      return "AddNewText{" + "text='" + text + '\'' + '}';
+    }
+  }
 }

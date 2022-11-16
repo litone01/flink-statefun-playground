@@ -15,15 +15,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.flink.statefun.playground.java.shoppingcart;
+package org.example;
 
 import org.apache.flink.statefun.sdk.java.TypeName;
 
-final class Identifiers {
+public final class Identifiers {
 
   private Identifiers() {}
 
-  static final TypeName RECEIPT_EGRESS =
+  static final TypeName ITEM_STATUS_EGRESS =
       TypeName.typeNameFromString("io.statefun.playground/egress");
-  static final String RECEIPT_TOPICS = "receipts";
+  public static final String ITEM_STATUS_TOPICS = "items";
 }
