@@ -1,4 +1,3 @@
-#
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
@@ -14,21 +13,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM python:3.9-alpine
-
-RUN mkdir -p /opt/statefun/
-COPY example.json /opt/statefun/
-
-RUN mkdir -p /app
-WORKDIR /app
-
-COPY requirements.txt /app
-RUN pip install -r requirements.txt
-
-COPY main.py /app
-
-
-CMD ["python3", "/app/main.py"]
-
-
-
+kind: io.statefun.endpoints.v2/http
+spec:
+  functions: statefun.testbed.fns/*
+  urlPathTemplate: http://127.0.0.1:1108/
+  transport:
+    type: io.statefun.transports.v1/async
+    call: 1day # setting a very high timeout here facilitates the user
+    # to set breakpoints in the function Java code and explore
+    # around in the IDE, without StateFun failing an ongoing invocation
+---
+kind: io.statefun.kafka.v1/ingress
+spec:
+  id: statefun.testbed.io/word-frequency
+  address: 127.0.0.1:9092
+  consumerGroupId: statefun.testbed.wordcount
+  startupPosition:
+    type: latest
+  topics:
+    - topic: word-frequency
+      valueType: statefun.testbed.types/AddNewText
+      targets:
+        - statefun.testbed.fns/word-count

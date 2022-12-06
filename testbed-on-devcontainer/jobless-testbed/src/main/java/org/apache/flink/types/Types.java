@@ -23,21 +23,27 @@ public class Types {
 
     public static class AddNewText {
         private final String text;
+        private final int streamId;
 
         @JsonCreator
         public AddNewText(
-                @JsonProperty("text") String text) {
+                @JsonProperty("text") String text,
+                @JsonProperty("stream_id") int streamId) {
             this.text = text;
+            this.streamId = streamId;
         }
 
         public String getText() {
             return text;
         }
 
+        public int getStreamId() {return streamId;}
+
         @Override
         public String toString() {
             return "AddNewText{" +
-                    "text='" + text + '\'' +
+                    "text='" + text + "'," +
+                    "stream_id=" + streamId +
                     '}';
         }
     }
